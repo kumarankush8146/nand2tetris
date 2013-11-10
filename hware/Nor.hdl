@@ -1,0 +1,15 @@
+// Nor gate implementation
+// Marco Secret
+
+/**
+* Nor gate: out=1 if (a && b == 1) else 0
+ */
+
+CHIP Nor {
+  IN a, b;
+  OUT out;
+
+  PARTS:
+  Or(a=a, b=b, out=x);
+  Not(in=x, out=out);
+}
