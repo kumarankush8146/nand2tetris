@@ -28,22 +28,55 @@
 // if (out==0) set zr = 1
 // if (out<0) set ng = 1
 
-  
 CHIP ALU {
-    IN  
-        x[16], y[16],  // 16-bit inputs        
-        zx, // zero the x input?
-        nx, // negate the x input?
-        zy, // zero the y input?
-        ny, // negate the y input?
-        f,  // compute  out = x + y (if 1) or out = x & y (if 0)
-        no; // negate the out output?
+  IN
+      x[16], y[16],  // 16-bit inputs
+      zx, // zero the x input?
+      nx, // negate the x input?
+      zy, // zero the y input?
+      ny, // negate the y input?
+      f,  // compute  out = x + y (if 1) or out = x & y (if 0)
+      no; // negate the out output?
 
-    OUT 
-        out[16], // 16-bit output
-        zr, // 1 if (out==0), 0 otherwise
-        ng; // 1 if (out<0),  0 otherwise
+  OUT
+      out[16], // 16-bit output
+      zr, // 1 if (out==0), 0 otherwise
+      ng; // 1 if (out<0),  0 otherwise
 
-    PARTS:
-   // Put you code here:
+  PARTS:
+  // Zero X
+  Not16(in=x, out=zeronx);
+  And16(a=x, b=zeronx, out=zeroax);
+  Mux16(a=x, b=zeroax, sel=zx, out=st1x);
+
+  // Negate X
+  Not16(in=st1x, out=negnx);
+  Mux16(a=st1x, b=negnx, sel=nx, out=st2x);
+
+  // Zero Y
+  Not16(in=y, out=zerony);
+  And16(a=y, b=zerony, out=zeroay);
+  Mux16(a=y, b=zeroay, sel=zy, out=st1y);
+
+  // Negate Y
+  Not16(in=st1y, out=negny);
+  Mux16(a=st1y, b=negny, sel=ny, out=st2y);
+
+  // Function
+  // f, // Function code: 1 for Add, 0 for And
+  Add16(a=st2x, b=st2y, out=faddout);
+  And16(a=st2x, b=st2y, out=fandout);
+  // if sel==1 then out=b else out=a
+  Mux16(a=fandout, b=faddout, sel=f, out=st3out);
+
+  // Negative Output
+  Not16(in=st3out, out=negout);
+  Mux16(a=st3out, b=negout, sel=no,
+    out[15]=ng, out[0..7]=st4m, out[8..15]=st4n, out=out);
+
+  // Output
+  Or8Way(in=st4m, out=finoutm);
+  Or8Way(in=st4n, out=finoutn);
+  Or(a=finoutm, b=finoutn, out=finf);
+  Not(in=finf, out=zr);
 }
